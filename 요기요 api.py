@@ -1,5 +1,6 @@
 import os
 import json
+from bs4 import ResultSet
 import requests
 import argparse
 import warnings
@@ -54,10 +55,10 @@ def get_restaurant_list(lat, lng, n=70):
     }
 
     url = YOGIYO + "/api/v1/restaurants-geo/?catagory="
-    response = requests.get(url, headers=headers, params=params)
+    response_restaurant = requests.get(url, headers=headers, params=params)
 
-    rest_list = ["restaurant :"]  # 최종 결과 저장
-    for i, restaurant in enumerate(response.json()["restaurants"]):
+    rest_list = []
+    for i, restaurant in enumerate(response_restaurant.json()["restaurants"]):
         print(i)
         path = f"/api/v1/restaurants/{restaurant['id']}//menu/"
         option = "?add_photo_menu=android"\
@@ -67,15 +68,16 @@ def get_restaurant_list(lat, lng, n=70):
         response_menu = requests.get(url, headers=headers, params=params)
 
         # TODO: 현재 rest_list 가 json형식에 맞지 않는다.
-        rest = ["info :"]
-        rest.append(parse_rest_info(restaurant))
+        rest = {}
+        rest["info"] = parse_rest_info(restaurant)
 
-        rest.append("menu :")
+        menu_list = []
         for menu in response_menu.json()[0]["items"]:
-            rest.append(parse_menu(menu))
+            menu_list.append(parse_menu(menu))
+        rest["menu"] = menu_list
 
         rest_list.append(rest)
-    return rest_list
+    return {"restaurant": rest_list}
 
 
 def save(rest_list):
