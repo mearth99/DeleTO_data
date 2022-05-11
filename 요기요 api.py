@@ -1,22 +1,52 @@
+from tqdm import tqdm  # progress bar
 import os
 import json
-from bs4 import ResultSet
 import requests
 import argparse
 import warnings
 warnings.filterwarnings("ignore")
 
-FILE_PATH = "dist/restaurant_data.json"
-
-
-YOGIYO = "https://www.yogiyo.co.kr"
+FILE_NAME = "dist/restaurant_data.json"
 
 AJOU_LAT = 37.2831587400464
 AJOU_LON = 127.045818871424
 
 
+class YogiyoAPI:
+    def __init__(self, lat, lng, n=100) -> None:
+        self.host = "https://www.yogiyo.co.kr"
+
+        self.headers = {
+            "referer": self.host+"/mobile/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36",
+            "Accept": "application/json",
+            "x-apikey": "iphoneap",
+            "x-apisecret": "fe5183cc3dea12bd0ce299cf110a75a2",
+        }
+        self.params = {
+            "items": n,
+            "lat": lat,
+            "lng": lng,
+            "order": "rank",
+            "page": 0,
+            "search": "",
+        }
+
+    def get_restaurant(self) -> dict:
+        url = self.host + "/api/v1/restaurants-geo/?catagory="
+        return requests.get(url, headers=self.headers, params=self.params).json()["restaurants"]
+
+    def get_menu(self, rest_id) -> list:
+        path = f"/api/v1/restaurants/{rest_id}//menu/"
+        option = "?add_photo_menu=android"\
+            + "&add_one_dish_menu=true"\
+            + "&order_serving_type=delivery"
+        url = self.host + path + option
+        return requests.get(url, headers=self.headers, params=self.params).json()[0]["items"]
+
+
 def parse_menu(item):
-    #print(json.dumps(item,indent=4, ensure_ascii=False))
+    # print(json.dumps(item,indent=4, ensure_ascii=False))
     key_list = ['original_image', 'image', 'description', 'price', 'name']
     rest_menu = {}
     for key in key_list:
@@ -32,57 +62,26 @@ def parse_rest_info(item):
                 'adjusted_delivery_fee', 'phone', 'address', 'logo_url', 'categories']
     rest_info = {}
     for key in key_list:
-        rest_info[key] = item[key]  # TODO: 이동만 하고 있음 구지 않해도 될수도 filter 이용
+        rest_info[key] = item[key]
     return rest_info
 
 
-def get_restaurant_list(lat, lng, n=70):
-    # 헤더 선언 및 referer, User-Agent 전송
-    headers = {
-        "referer": YOGIYO+"/mobile/",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36",
-        "Accept": "application/json",
-        "x-apikey": "iphoneap",
-        "x-apisecret": "fe5183cc3dea12bd0ce299cf110a75a2",
-    }
-    params = {
-        "items": n,
-        "lat": lat,
-        "lng": lng,
-        "order": "rank",
-        "page": 0,
-        "search": "",
-    }
-
-    url = YOGIYO + "/api/v1/restaurants-geo/?catagory="
-    response_restaurant = requests.get(url, headers=headers, params=params)
-
+def get_restaurant_list(yogiyoAPI: YogiyoAPI) -> dict:
     rest_list = []
-    for i, restaurant in enumerate(response_restaurant.json()["restaurants"]):
-        print(i)
-        path = f"/api/v1/restaurants/{restaurant['id']}//menu/"
-        option = "?add_photo_menu=android"\
-            + "&add_one_dish_menu=true"\
-            + "&order_serving_type=delivery"
-        url = YOGIYO + path + option
-        response_menu = requests.get(url, headers=headers, params=params)
-
-        # TODO: 현재 rest_list 가 json형식에 맞지 않는다.
+    for restaurant in tqdm(yogiyoAPI.get_restaurant()):
         rest = {}
         rest["info"] = parse_rest_info(restaurant)
-
         menu_list = []
-        for menu in response_menu.json()[0]["items"]:
+        for menu in yogiyoAPI.get_menu(restaurant['id']):
             menu_list.append(parse_menu(menu))
         rest["menu"] = menu_list
-
         rest_list.append(rest)
     return {"restaurant": rest_list}
 
 
 def save(rest_list):
-    os.makedirs(os.path.dirname(FILE_PATH), exist_ok=True)
-    with open(FILE_PATH, 'w', encoding='UTF-8') as outfile:
+    os.makedirs(os.path.dirname(FILE_NAME), exist_ok=True)
+    with open(FILE_NAME, 'w', encoding='UTF-8') as outfile:
         json.dump(rest_list, outfile, indent=4, ensure_ascii=False)
 
 
@@ -95,7 +94,7 @@ if __name__ == '__main__':
         help="option for restaurant list order / choose one \
         -> [rank, review_avg, review_count, min_order_value, distance, estimated_delivery_time]",
     )
-    parser.add_argument("--num", required=False, default=10,
+    parser.add_argument("--num", required=False, default=100,
                         help="option for restaurant number")
     parser.add_argument("--lat", required=False,
                         default=AJOU_LAT, help="latitude for search")
@@ -109,6 +108,5 @@ if __name__ == '__main__':
     LON = float(args.lon)
     location = [LAT, LON]
 
-    print("시작")
-    save(get_restaurant_list(location[0], location[1], RESTAURANT_COUNT))
-    print("끝")
+    yogiyoAPI = YogiyoAPI(*location, RESTAURANT_COUNT)
+    save(get_restaurant_list(yogiyoAPI))
