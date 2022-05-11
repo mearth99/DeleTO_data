@@ -1,12 +1,11 @@
-
+import os
 import json
 import requests
 import argparse
 import warnings
 warnings.filterwarnings("ignore")
 
-FILE_PATH = "D:/jingi/datajson.txt"
-# FILE_PATH = "D:/joey_workspace/2022/아주대/1학기/소프트웨어공학/팀프로젝트/코드/datajson.json"
+FILE_PATH = "dist/restaurant_data.json"
 
 
 YOGIYO = "https://www.yogiyo.co.kr"
@@ -67,6 +66,7 @@ def get_restaurant_list(lat, lng, n=70):
         url = YOGIYO + path + option
         response_menu = requests.get(url, headers=headers, params=params)
 
+        # TODO: 현재 rest_list 가 json형식에 맞지 않는다.
         rest = ["info :"]
         rest.append(parse_rest_info(restaurant))
 
@@ -79,9 +79,8 @@ def get_restaurant_list(lat, lng, n=70):
 
 
 def save(rest_list):
-    # TODO: 현재 rest_list 가 json형식에 맞지 않는다.
-    file_path = FILE_PATH
-    with open(file_path, 'w', encoding='UTF-8') as outfile:
+    os.makedirs(os.path.dirname(FILE_PATH), exist_ok=True)
+    with open(FILE_PATH, 'w', encoding='UTF-8') as outfile:
         json.dump(rest_list, outfile, indent=4, ensure_ascii=False)
 
 
@@ -94,7 +93,7 @@ if __name__ == '__main__':
         help="option for restaurant list order / choose one \
         -> [rank, review_avg, review_count, min_order_value, distance, estimated_delivery_time]",
     )
-    parser.add_argument("--num", required=False, default=100,
+    parser.add_argument("--num", required=False, default=10,
                         help="option for restaurant number")
     parser.add_argument("--lat", required=False,
                         default=AJOU_LAT, help="latitude for search")
