@@ -58,7 +58,7 @@ def parse_menu(item):
 
 
 def parse_rest_info(item):
-    key_list = ['id', 'name', 'review_avg', 'begin', 'end', 'min_order_amount', 'estimated_delivery_time',
+    key_list = ['id', 'name', 'review_avg', 'begin', 'end', 'lat', 'lng', 'min_order_amount', 'estimated_delivery_time',
                 'adjusted_delivery_fee', 'phone', 'address', 'logo_url', 'categories']
     rest_info = {}
     for key in key_list:
