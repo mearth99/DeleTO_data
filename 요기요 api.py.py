@@ -11,7 +11,7 @@ from fake_useragent import UserAgent
 import json
 
 def restaurant(item,item2):
-    key_list = ['id', 'name', 'review_avg','begin','end','min_order_amount','estimated_delivery_time',
+    key_list = ['id', 'name', 'review_avg','begin','end','lat','lng','min_order_amount','estimated_delivery_time',
                 'adjusted_delivery_fee','phone','address','logo_url','categories']
     rest_menu = {}
     for key in key_list:
@@ -61,11 +61,12 @@ def get_restaurant_list(lat, lng,item=70):
         temp_list = ["info :"]
         temp_list.append("menu :")
         restaurant_id = item["id"]
+        time.sleep(1)
         response_menu = requests.get(f"https://www.yogiyo.co.kr/api/v1/restaurants/{restaurant_id}//menu/?add_photo_menu=android&add_one_dish_menu=true&order_serving_type=delivery",headers=headers, params=params)
         for item_menu in response_menu.json()[0]["items"]:
             temp_list.append(menu(item_menu))
         result_list.append(restaurant(item,temp_list))
-    file_path = "D:/jingi/datajson.txt"
+    file_path = "D:/jingi/진기/소프트웨어 공학/DeleTO_data/restaurant_data.txt"
     with open(file_path, 'w',encoding='UTF-8') as outfile:
         json.dump(result_list, outfile, indent=4, ensure_ascii=False)
     return
