@@ -58,8 +58,8 @@ def parse_menu(item):
 
 
 def parse_rest_info(item):
-    key_list = ['id', 'name', 'review_avg', 'begin', 'end', 'lat', 'lng', 'min_order_amount', 'estimated_delivery_time',
-                'adjusted_delivery_fee', 'phone', 'address', 'logo_url', 'categories']
+    key_list = ['id', 'name', 'review_avg', 'begin', 'end', 'min_order_amount', 'estimated_delivery_time',
+                'adjusted_delivery_fee', 'phone', 'address', 'logo_url', 'categories' ,'lat', 'lng']
     rest_info = {}
     for key in key_list:
         rest_info[key] = item[key]
@@ -76,7 +76,7 @@ def get_restaurant_list(yogiyoAPI: YogiyoAPI) -> dict:
             menu_list.append(parse_menu(menu))
         rest["menu"] = menu_list
         rest_list.append(rest)
-    return {"restaurant": rest_list}
+    return {"restaurants": rest_list}
 
 
 def save(rest_list):
